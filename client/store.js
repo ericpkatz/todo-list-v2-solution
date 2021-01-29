@@ -32,9 +32,21 @@ const _createTodo = (todo)=> {
 
 const createTodo = (todo, history)=> {
   return async(dispatch)=> {
-    const created = (await axios.post('/api/todos', todo)).data;
-    dispatch(_createTodo(created));
-    history.push('/');
+    // you might ask yourself, why is a try catch necessary if we are just throwing the error here?
+    // and you have a good point. The important thing is that we don't 'swallow' the error
+    // an example of swallowing the error would be to log it and not throw it
+    // if we swallow the error, the code which calls this thunk will never find out what happened!!
+    // bottom line: try and catch is fine here but make sure to throw
+    try {
+      const created = (await axios.post('/api/todos', todo)).data;
+      dispatch(_createTodo(created));
+      history.push('/');
+    }
+    catch(ex){
+      console.log(ex.response.data);//note in order to see the error, we have to look at it's response
+      //you can test this out by putting a really long string in the taskName field
+      throw ex;
+    }
   };
 };
 
