@@ -104,3 +104,6 @@ button:disabled {
   background-color: #ccc;
 }
 
+.error {
+  background-color: tomato;
+}

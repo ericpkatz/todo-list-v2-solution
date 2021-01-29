@@ -13,7 +13,8 @@ class CreateTodo extends Component {
     super()
     this.state = {
       taskName: '',
-      assignee: ''
+      assignee: '',
+      error: ''
     }; 
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -28,11 +29,17 @@ class CreateTodo extends Component {
   async handleSubmit (evt) {
     evt.preventDefault()
     const todo = {};
-    this.props.createTodo({ ...this.state })
+    try {
+      await this.props.createTodo({ ...this.state })
+    }
+    catch(ex){
+      console.log(ex);
+      this.setState({ error: ex.response.data });
+    }
   }
 
   render () {
-    const { assignee, taskName } = this.state;
+    const { assignee, taskName, error } = this.state;
     const { handleSubmit, handleChange } = this;
     return (
       <form id='todo-form' onSubmit={handleSubmit}>
@@ -49,6 +56,9 @@ class CreateTodo extends Component {
 
         <button type='submit'>Submit</button>
         <Link to='/'>Cancel</Link>
+        {
+          !!error && <div className='error'>{ error }</div>
+        }
       </form>
     )
   }
