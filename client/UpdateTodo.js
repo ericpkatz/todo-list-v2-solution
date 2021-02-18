@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import { updateTodo, destroyTodo } from './store';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const defaultState = {
   taskName: '',
@@ -12,19 +13,18 @@ class UpdateTodo extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      taskName: this.props.todo.taskName || '',
-      assignee: this.props.todo.assignee || '' 
+      taskName: '',
+      assignee: '',
+      error: ''
     }; 
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
   }
-  componentDidUpdate(prevProps){
-    if(this.props.todo.id && !prevProps.todo.id){
-      this.setState({
-        taskName: this.props.todo.taskName,
-        assignee: this.props.todo.assignee
-      });
-    }
+  async componentDidMount(){
+    const response = await axios.get(`/api/todos/${this.props.match.params.id}`)
+    const { assignee, taskName } = response.data;
+    this.setState({ assignee, taskName });
+
   }
 
   handleChange (evt) {
@@ -34,44 +34,51 @@ class UpdateTodo extends Component {
   }
 
   async handleSubmit (evt) {
-    evt.preventDefault()
-    this.props.updateTodo({ ...this.state, id: this.props.todo.id })
+    try {
+      evt.preventDefault()
+      const updated = {...this.state };
+      delete updated.error;
+      await this.props.updateTodo(updated)
+    }
+    catch(ex){
+      if(ex.response && ex.response.data){
+        this.setState({ error: ex.response.data });
+      }
+    }
   }
 
   render () {
-    const { assignee, taskName } = this.state;
+    const { assignee, taskName, error } = this.state;
     const { handleSubmit, handleChange } = this;
     return (
-      <div>
-        <form id='todo-form' onSubmit={handleSubmit}>
+      <form id='todo-form' onSubmit={handleSubmit}>
+        <label htmlFor='taskName'>
+          Task Name:
+        </label>
+        <input name='taskName' onChange={handleChange} value={taskName} />
 
-          <label htmlFor='taskName'>
-            Task Name:
-          </label>
-          <input name='taskName' onChange={handleChange} value={taskName} />
+        <label htmlFor='assignee'>
+          Assign To:
+        </label>
+        <input name='assignee' onChange={handleChange} value={assignee} />
 
-          <label htmlFor='assignee'>
-            Assign To:
-          </label>
-          <input name='assignee' onChange={handleChange} value={assignee} />
-
-          <button type='submit'>Submit</button>
-          <Link to='/'>Cancel</Link>
-        </form>
-        <button onClick={ ()=> this.props.destroy( this.props.todo )}>Destroy</button>
-      </div>
+        <button type='submit'>Submit</button>
+        <a className='destroy-button' onClick={ this.props.destroy }>Destroy</a>
+        <Link to='/'>Cancel</Link>
+        {
+          !!error && <div className='error'>{ error }</div>
+          
+        }
+      </form>
     )
   }
 }
 
-export default connect((state, { match })=> {
-  const todo = state.todos.find( todo => todo.id === match.params.id * 1 ) || {};
+const mapDispatchToProps = (dispatch, { history, match })=> {
   return {
-    todo
+    updateTodo: (todo)=> dispatch(updateTodo({...todo, id: match.params.id }, history)),
+    destroy: ()=> dispatch(destroyTodo({ id: match.params.id * 1 }, history))
   };
-}, (dispatch, { history })=> {
-  return {
-    updateTodo: (todo)=> dispatch(updateTodo(todo, history)),
-    destroy: (todo)=> dispatch(destroyTodo(todo, history))
-  };
-})(UpdateTodo);
+}
+
+export default connect(null, mapDispatchToProps)(UpdateTodo);

@@ -12,7 +12,7 @@ router.get('/', async(req, res, next) => {
 
 router.get('/:id', async(req, res, next) => {
   try {
-    res.send(await Todo.findByPke(req.params.id));
+    res.send(await Todo.findByPk(req.params.id));
   }
   catch(ex){
     next(ex);
